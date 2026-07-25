@@ -78,7 +78,10 @@
   var osOutdoor = L.tileLayer(
     "https://api.os.uk/maps/raster/v1/zxy/Outdoor_3857/{z}/{x}/{y}.png?key=" + OS_API_KEY,
     { attribution: "Contains OS data © Crown copyright and database rights 2026",
-      maxZoom: 20, minZoom: 7 });
+      // Zoom 7-16 are OS OpenData = free and unlimited. maxNativeZoom caps tile
+      // requests at 16 so we never touch chargeable Premium tiles (17+); the map
+      // still zooms to 19 by upscaling the z16 tiles (slightly soft up close).
+      maxNativeZoom: 16, maxZoom: 19, minZoom: 7 });
 
   var satellite = L.layerGroup([imagery, refLabels]);
   var map = L.map("map", { layers: [satellite], zoomControl: true }).setView([57.22, -3.7], 11);
@@ -117,7 +120,11 @@
   // On a slow/flaky connection, retry a few times so the layer still loads.
   var statusEl = document.getElementById("status");
   var fireOK = false, fireTries = 0, FIRE_MAX = 4;
-  fires.on("load", function () { fireOK = true; statusEl.textContent = "Live fire data loaded · reload the page to update"; });
+  fires.on("load", function () {
+    fireOK = true;
+    var stamp = new Date().toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    statusEl.textContent = "Live fire data · pulled " + stamp + " (your local time) · reload to update";
+  });
   fires.on("requesterror", function () {
     if (fireOK) return;
     fireTries++;
